@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:json="http://www.mulesoft.org/schema/mule/json"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="b379a124-89d7-4c29-830b-4951dc3910d8" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="a580aec1-42fc-4484-b8fa-f893a0796484" >
+		<salesforce:basic-connection username="nari123@bcs.com" password="Nari@2800" securityToken="P0fjuWN1XcUeOSCZ4UtRI2O2M" />
+	</salesforce:sfdc-config>
+	<flow name="salesforce_service_cloud_pocFlow" doc:id="fc6e3cb1-2d08-47c6-84aa-0bf717d9f9d6" >
+		<http:listener doc:name="Listener" doc:id="fe7cdbaa-d925-4ee6-bd82-ec49089753e0" config-ref="HTTP_Listener_config" path="/serviceCloud"/>
+		<json:validate-schema doc:name="Validate schema" doc:id="24e9f1d5-9895-44dd-aa4a-7533ac66f05c" schema="sample-schema.json"/>
+		<logger level="INFO" doc:name="Logger" doc:id="deb24544-86b1-4e9f-82b9-5f665f7437d8" message="#[payload]"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="984439e8-633d-42da-9391-b724446d9ce0" >
+				<flow-ref doc:name="salesforce service cloud sub flow" doc:id="f5feca4e-ebed-4cb8-809f-e4c420fae132" name="salesforce_service_cloud_pocSub_Flow"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<sub-flow name="salesforce_service_cloud_pocSub_Flow" doc:id="874485ec-00f8-4a4a-9fe0-9ae7edb9919d" >
+		<ee:transform doc:name="Transform Message" doc:id="3da4ecb7-445b-499b-b7a0-d011cd839eab" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+[{
+"contactId": "",
+"Status": "New",
+"Subject": "cannot verify json schema",
+"Description": "Error while verifying json schema",
+"Comments": "This is very urgent. Please resolve it quickly"
+}]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:create doc:name="Create case" doc:id="e40e76d9-afaf-4304-8832-5e490e6de032" config-ref="Salesforce_Config" type="Case"/>
+		<logger level="INFO" doc:name="Logger" doc:id="720c9b5e-ef91-438e-8851-1cbf555a4ef0" message="#[payload]"/>
+		<ee:transform doc:name="Transform Message" doc:id="a5b7deec-6dd7-43f8-aa37-807e878e0e29" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="e1013fee-6541-446d-9dc2-f83ee8c29422" message="#[payload]"/>
+	</sub-flow>
+</mule>
